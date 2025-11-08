@@ -1,0 +1,14 @@
+# Celery
+celery==5.4.0
+redis==5.1.1
+
+# Database
+sqlmodel==0.0.22
+psycopg2-binary==2.9.9
+
+# HTTP
+httpx==0.27.2
+
+# Utilities
+python-dotenv==1.0.1
+pytz==2024.2

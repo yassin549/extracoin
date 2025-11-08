@@ -1,0 +1,593 @@
+# Tunicoin — Complete Product Specification
+
+> A complete, unambiguous product description for the Tunicoin virtual CFD–futures trading platform. This document explains every feature, screen, data model, API surface, simulation rule, AI agent behavior, UX microcopy, legal disclaimers, and operational requirement — intended as the single source of truth for designers, frontend and backend engineers, QA, and legal.
+
+---
+
+## 1. Executive summary
+
+Tunicoin is a **virtual CFD futures trading platform** where users interact with a realistic simulated market. The platform offers standard trading UI (charts, order tickets, positions), portfolio analytics, backtesting, and — the core differentiator — **an AI trading agent** (the "Tunicoin Bot") that trades on subscribers' simulated accounts. All trades are simulated: no market executions or custody of real funds.
+
+Primary goals:
+
+* Provide an immersive, trustworthy simulation experience that feels like live CFD trading.
+* Allow users to subscribe to and monitor AI agents that manage positions automatically.
+* Offer tools for learning, experimentation, and competition while protecting users from claims of guaranteed returns.
+
+Branding & design: primary color palette is **blue** and **white** (details in Section 5). The experience must prioritize clarity, transparency, and confidence.
+
+Audience:
+
+* Retail traders learning CFD trading without real capital risk.
+* Traders who want to test algorithmic strategies and follow AI-managed portfolios.
+* Educators and communities for gamified simulated trading.
+
+---
+
+## 2. User roles & permissions
+
+### 2.1 End user (Trader)
+
+* Register, verify email, set 2FA.
+* Choose subscription plan and enter payment method.
+* Create and manage simulated accounts (multiple accounts supported: e.g., Demo, Practice, Strategy-1).
+* Subscribe to Tunicoin Bot or marketplace strategies.
+* Place manual simulated orders (market, limit, stop, stop-limit, OCO).
+* View charts, indicators, trade history, P&L, portfolio analytics, and backtests.
+* Configure bot risk parameters (permitted by plan).
+* Access support, notification settings, and export statements.
+
+### 2.2 Admin (internal)
+
+* Manage users, subscriptions, tiers, and billing adjustments.
+* Inspect logs (trades, bot decisions, simulation runs).
+* Upload instrument definitions, adjust simulation parameters (spreads, funding rates).
+* Pause/resume the live-sim engine for maintenance.
+* Manage strategy marketplace (approve/reject user-submitted strategies).
+
+### 2.3 Auditor/Compliance (internal, read-only)
+
+* Read-only access to detailed logs, backtest records, and legal templates.
+
+---
+
+## 3. Key concepts & glossary
+
+* **Simulated Account**: A ledger that mirrors a real trading account but all fills are virtual and recorded in the platform DB.
+* **Tunicoin Bot**: The AI algorithmic agent which places simulated trades on behalf of a user who subscribes.
+* **Backtest**: Replaying historical data to compute strategy returns and metrics.
+* **Live-sim**: Running the strategy on a replay/streaming simulator that behaves like live markets.
+* **Order types**: Market, Limit, Stop, Stop-Limit, Take-Profit, Trailing Stop, OCO.
+* **Position**: An open exposure in a symbol with entry price, size, direction, unrealized P&L.
+* **Equity Curve**: Time-series of account equity.
+* **Funding cost**: Simulated financing cost for CFDs carried overnight.
+* **Slippage**: Additional price difference between expected and fill price modeled in simulation.
+
+---
+
+## 4. Product scope — complete feature list
+
+> The features below describe the MVP and extended features. For each feature, a short description, UX considerations, data stored, API endpoints, and acceptance criteria are provided.
+
+### 4.1 Authentication & Account management
+
+**Description**: Email/password sign-up, email verification, password reset, optional 2FA (TOTP). Multiple simulated accounts per user.
+
+**UX**:
+
+* Sign-up flow: Email -> password -> verify -> onboarding modal offering pre-funded demo account option.
+* 2FA setup screen with QR and backup codes.
+
+**Data stored**: user_id, email (verified flag), hashed_password, 2fa_secret, created_at, last_login.
+
+**API endpoints (example)**:
+
+* `POST /api/auth/signup` — registers user.
+* `POST /api/auth/login` — returns session token.
+* `POST /api/auth/2fa/verify` — enable/validate 2FA.
+* `POST /api/users/:id/accounts` — create simulated account.
+
+**Acceptance criteria**: Users can register, verify email, enable 2FA, and create at least one simulated account.
+
+---
+
+### 4.2 Billing & subscriptions
+
+**Description**: Stripe-based subscriptions. Plans: Free, Basic, Pro, Enterprise. Trial periods configurable.
+
+**UX**:
+
+* Pricing page with clear features per plan, CTA to sign up, and a modal showing simulated bot performance examples.
+* In-app billing management: upgrade/downgrade, view invoices, cancel plan.
+
+**Data stored**: stripe_customer_id, stripe_subscription_id, plan_tier, next_billing_date, billing_history.
+
+**API endpoints**:
+
+* `POST /api/billing/subscribe` — create subscription.
+* `GET /api/billing/invoices` — list.
+
+**Acceptance criteria**: Users can subscribe via Stripe and access plan features immediately.
+
+**Notes**: Never incentivize or advertise guaranteed returns. Store explicit acceptance of terms at plan purchase.
+
+---
+
+### 4.3 Trading canvas (main trading UI)
+
+**Description**: Core UI for interacting with charts and placing simulated orders. Must support responsive, mobile-first layout.
+
+**Layout**:
+
+* Desktop: Left: chart (hero). Right: order ticket and bot quick controls. Bottom: order book & recent trades panel (simulated), positions & P&L.
+* Mobile: Chart is full width with a collapsible trade ticket overlay; bottom drawer for positions and orders.
+
+**Functional elements**:
+
+1. **Chart**: candlesticks with timeframe selector (1m, 5m, 15m, 1h, 4h, 1d), zoom, pan, indicators (SMA, EMA, RSI, MACD, Bollinger), drawing tools (trendline, ray), axis labels, crosshair.
+2. **Order ticket**: symbol selector, order type dropdown, size/quantity (lot-based and currency-based), price input (editable), leverage slider (if plan allows), preview of margin required, checkbox for simulated slippage model on/off (visible only to advanced users), `Place Order` button with a confirm modal that shows estimated fees and impact.
+3. **Position list**: Active positions with columns: symbol, side, entry price, size, margin, unrealized P&L, P&L %, close (button) with Confirm dialog.
+4. **Orders & history tab**: Open orders, executed orders, canceled orders, trade-by-trade details and execution simulation parameters (fill price, slippage, latency, fees).
+5. **Bot control widget**: enable/disable bot for the account, current bot status (Idle, Running, Paused, Error), link to full Bot page.
+
+**Data stored**:
+
+* instrument definitions (symbol, tick size, contract size), candles (cached), order records, position records, account ledger entries.
+
+**API endpoints** (sample):
+
+* `GET /api/market/:symbol/candles?tf=1m&from=&to=`
+* `POST /api/accounts/:id/orders` — create order.
+* `DELETE /api/accounts/:id/orders/:orderId` — cancel.
+* `GET /api/accounts/:id/positions`
+
+**Acceptance criteria**: User can place the supported order types; UI updates reflect simulated fills and P&L within 1s of server confirmation.
+
+---
+
+### 4.4 Simulation engine rules (core behavior)
+
+**Description**: The simulation engine models fills, spreads, slippage, latency, and funding costs. Parameters are configurable per instrument and per plan.
+
+**Core rules**:
+
+1. **Spread model**: Each instrument has a base bid/ask spread. Market orders are filled at mid ± slippage depending on order size. Limit orders may fill partially if price reaches the limit.
+2. **Slippage**: Modeled as a function: `slippage = base_slippage + k * (order_size / avg_1min_volume)`, capped at a maximum percent. `k` is instrument-specific.
+3. **Latency**: Execution delay applied between order placement and fill event (configurable mean + jitter). Advanced plans can lower configured latency to simulate better execution.
+4. **Partial fills**: Large orders may be partially filled across multiple ticks; remaining quantity remains as pending limit component.
+5. **Funding & rollover**: For CFD futures, daily funding cost computed pro-rata and applied at UTC 00:00, or as specified by instrument. Overnight positions incur funding debit/credit.
+6. **Leverage**: Users can set leverage per position if allowed by plan. Margin requirements enforced; margin call rules exist (close positions or block further orders if equity < maintenance margin).
+7. **Fees**: Per-trade commission and spread markup applied; stored as ledger entries.
+8. **Reproducibility**: For paid plans, simulation should be reproducible with seed logging (randomness seed stored with each order or backtest job) so users can re-run same scenario.
+
+**Acceptance criteria**: Simulation reproduces plausible fills under recorded parameters and applies fees/funding correctly.
+
+---
+
+### 4.5 Backtesting & Live-sim
+
+**Description**: Allow users to run strategies on historical data (backtest) and run the same strategy in live-sim mode to watch it trade forward in (simulated) realtime.
+
+**Backtest features**:
+
+* Choose date range, initial capital, commission model, slippage parameters, and lookback features.
+* Metrics: CAGR, Annualized Volatility, Sharpe Ratio (configurable risk-free rate), Max Drawdown, Win Rate, Average Trade Duration, Expectancy, Profit Factor.
+* Trade-by-trade list and equity curve plotting with drawdown shading.
+* Walk-forward testing: split train/test windows and aggregate metrics.
+
+**Live-sim features**:
+
+* Replay historical data (time-accelerated) or run on near-live tick feed for realistic conditions.
+* Pause / rewind / speed controls.
+* Live-sim runs are recorded and can be exported.
+
+**API endpoints**:
+
+* `POST /api/backtest` — create job, returns job_id.
+* `GET /api/backtest/:job_id/results` — results & metrics.
+
+**Acceptance criteria**: Backtests complete within expected resource time; results match recorded trade logs and metrics calculations are consistent with industry formulas.
+
+---
+
+### 4.6 AI Agent (Tunicoin Bot) — full spec
+
+**Overview**: The Tunicoin Bot is a pluggable AI agent that executes simulated trades on a user’s account according to a chosen strategy and risk profile. The Bot must be transparent: show rationale, parameters, and trade logs.
+
+**Capabilities**:
+
+* Run multiple strategies (pre-built rules-based + ML variants).
+* Risk control: position sizing, stop-loss, take-profit, maximum daily loss limit, maximum exposure.
+* Strategy parameters adjustable via UI: risk slider (0–100), base position size, max open positions, allowed instruments, timeframe preference.
+* Provide per-trade explanations (short text reason) and attach feature signals when relevant.
+* Allow copy/subscription model: users subscribe to a Bot instance; each user's Bot instance uses the same strategy code but runs on separate simulated ledger.
+
+**Architecture**:
+
+* **Strategy module**: Python classes implementing `generate_signals(candle, state) -> orders`.
+* **Risk manager**: Wrapper around strategy outputs that adjusts order size and blocks trades violating limits.
+* **Execution simulator**: Accepts orders from strategy and performs simulated fills using the simulation engine.
+* **Decision logger**: Records structured logs for every decision: inputs (indicators, signals), chosen action, and resulting fill.
+* **Explainability module**: For ML strategies, generate SHAP-like feature attributions or simple heuristic explanations.
+
+**Security/safety**:
+
+* Hard limits: maximum leverage, maximum daily losses. If limits exceeded, Bot auto-pauses and sends alert.
+* Circuit-breakers: If live-sim volatility > threshold, pause trading and notify admin.
+
+**APIs**:
+
+* `POST /api/bots/:bot_id/attach` — user subscribes to bot.
+* `POST /api/bots/:bot_id/params` — update user-specific bot params (within allowed ranges).
+* `GET /api/bots/:bot_id/status` — current status and recent trades.
+
+**Transparency UI**:
+
+* Bot page with: performance chart vs benchmark, trade list, per-trade explanation, risk slider, settings, and historical backtests for strategy.
+
+**Acceptance criteria**: Bot runs safely under defined rules, logs decisions, can be enabled/disabled by users, and applies risk limits.
+
+---
+
+### 4.7 Strategy marketplace (v1+)
+
+**Description**: Allow curated strategies (internal & third-party) listed with performance summaries, fees, and required plan tier. Users can subscribe per-strategy.
+
+**Marketplace requirements**:
+
+* Strategy listing page with filters (risk level, timeframe, instrument coverage, past-year return, max drawdown).
+* Each strategy card shows summary metrics and a link to detailed backtest and trade logs.
+* Approval workflow: strategies submitted by third-parties enter manual review; admin can publish/reject.
+
+**Monetization**: Strategies can have subscription fees or revenue share models.
+
+---
+
+### 4.8 Portfolio & analytics
+
+**Description**: Comprehensive portfolio analytics with exportable statements.
+
+**Widgets**:
+
+* Equity curve, drawdown chart (interactive), P&L heatmap by day/hour, top-performing instruments, exposure by sector (if applicable), per-strategy performance, and risk metrics.
+* Transaction ledger export (CSV/PDF).
+
+**Acceptance criteria**: Users can export a statement for any date range and see consistent ledger entries that reconcile with portfolio P&L.
+
+---
+
+### 4.9 Notifications & alerts
+
+**Types**:
+
+* Trade executed, order canceled.
+* Position margin call / margin closeout.
+* Bot paused automatically (circuit-breaker) or manual pause/resume.
+* Subscription renewal, failed payment.
+
+**Channels**: in-app toasts, email, and (v2) push notifications.
+
+**User settings**: toggles per alert type and channel; do-not-disturb schedule.
+
+---
+
+### 4.10 Admin & operational features
+
+**Admin UI**:
+
+* User management, subscription management, instrument configuration, and simulation parameter controls.
+* View and export logs: per-account ledger, bot decisions, backtest jobs.
+* Ability to run data migrations, reset test accounts, and throttle workloads.
+
+**Operational needs**:
+
+* Job queue monitor, worker autoscaling config, alerting on job failures, and manual maintenance mode.
+
+---
+
+### 4.11 Security, privacy, and compliance
+
+**Security basics**:
+
+* Password hashing (bcrypt/argon2), HTTPS-only, secure cookies for sessions, CSRF protection.
+* Rate limiting on critical endpoints (auth, billing, order placement).
+* Secrets stored in vault or environment variables.
+
+**Privacy**:
+
+* Store minimal PII; provide data export and deletion options per GDPR-like rules.
+
+**Compliance notes**:
+
+* Add explicit, prominent disclaimers that Tunicoin simulates trading and does not handle real funds.
+* Do not advertise guaranteed returns; show risk disclosures on landing and during purchase.
+* If marketing in jurisdictions with CFD regulation, consult counsel and include region-specific notices.
+
+---
+
+### 4.12 Observability, logging & monitoring
+
+**Logging**:
+
+* Structured logs for orders, fills, bot decisions, API errors. Capture request IDs and user IDs for traceability.
+
+**Metrics**:
+
+* Uptime, API latency, worker queue backlog, number of active bots, average backtest time, billing success rate.
+
+**Alerts**:
+
+* Notify operations for worker failures > N, queue backlog > threshold, and data pipeline breaks.
+
+**Retention**: logs retained for 90 days by default; archived critical logs to cold storage for 1 year for audits.
+
+---
+
+### 4.13 Internationalization & accessibility
+
+**I18n**:
+
+* Support English by default; design strings to be translatable.
+* Locale-aware date/time display and number formatting.
+
+**Accessibility**:
+
+* Keyboard navigation for the trading canvas, aria-labels for critical controls, color contrast meeting WCAG AA.
+
+---
+
+## 5. UX / UI detailed spec
+
+### 5.1 Brand & visual system
+
+**Primary palette**:
+
+* `--blue-900: #0B3D91` (deep professional blue)
+* `--blue-600: #2B6EEA` (primary accent)
+* `--white: #FFFFFF`
+* `--muted-gray: #F5F7FA`
+* `--text: #0F172A`
+
+**Typography**:
+
+* Headings: Inter, 600/700 variable weight. Body: Inter 400. Use scalable system with base 16px.
+
+**Iconography**:
+
+* Use system icons (lucide or feather) with consistent stroke weights.
+
+**Components**:
+
+* Card: rounded 12px, soft shadow, 16px padding.
+* Button primary: gradient from `--blue-600` to `--blue-900`, subtle scale on press.
+* Modal: 2xl rounded, backdrop blur.
+
+### 5.2 Motion & micro-interactions
+
+**Principles**: subtle, purposeful, and performant.
+
+* Page transitions: 150–220ms ease-out fade + Y-translate 6–12px.
+* Chart interactions: animated indicator overlays and smooth redraws on timeframe change.
+* Order placement: success animation with a small confirmation toast and a micro-celebration for first subscription (confetti burst, optional).
+* Bot enable/disable toggle: animated switch with status pill (color coded).
+
+**3D accents**:
+
+* Use layered card transforms and perspective for dashboard hero (slight rotation + depth shadow) to create a tactile feel. Avoid heavy 3D that harms readability.
+
+### 5.3 Mobile-specific
+
+* Bottom action bar with quick actions: Buy, Sell, Bot Panel, Portfolio.
+* Full-screen chart mode; gesture to open/close order ticket.
+
+---
+
+## 6. Data model & DB schema (high-level)
+
+**Tables (representative)**:
+
+* `users` (id, email, hashed_password, 2fa_secret, created_at, last_login, plan_id)
+* `accounts` (id, user_id, name, base_currency, balance, equity, margin_used, created_at)
+* `instruments` (symbol, name, tick_size, contract_size, base_currency, spread, funding_rate)
+* `candles` (instrument_id, timeframe, ts, open, high, low, close, volume)
+* `orders` (id, account_id, instrument_id, type, side, price, size, status, created_at, filled_at, fill_price, slippage)
+* `positions` (id, account_id, instrument_id, side, avg_price, size, unrealized_pnl, created_at)
+* `ledger_entries` (id, account_id, type, amount, balance_after, meta)
+* `bots` (id, strategy_id, user_id, params_json, status)
+* `backtests` (id, user_id, strategy_id, params, metrics_json, log_id)
+
+**Indexes & constraints**: indexes on user_id, account_id, instrument_id, ts for candles, and job_id for backtests.
+
+---
+
+## 7. API design — resources & sample endpoints
+
+**Auth**
+
+* `POST /api/auth/signup`
+* `POST /api/auth/login`
+* `POST /api/auth/logout`
+
+**Markets**
+
+* `GET /api/market/instruments`
+* `GET /api/market/{symbol}/candles?tf=1m&from=&to=`
+
+**Accounts / Orders**
+
+* `GET /api/accounts/:id` — account summary.
+* `POST /api/accounts/:id/orders` — place order.
+* `GET /api/accounts/:id/orders` — list.
+* `GET /api/accounts/:id/positions` — list positions.
+
+**Bots**
+
+* `POST /api/bots/:id/attach` — subscribe user to bot.
+* `POST /api/bots/:id/params` — update params.
+* `GET /api/bots/:id/status`
+
+**Backtests**
+
+* `POST /api/backtests` — start backtest job.
+* `GET /api/backtests/:id/result`
+
+**Billing**
+
+* `POST /api/billing/subscribe`
+* `GET /api/billing/invoices`
+
+---
+
+## 8. Deployment & infra recommendations
+
+**Containers**: Docker images for frontend (Next.js SSR), API (FastAPI), worker (Python/Celery), and a separate job runner for backtests.
+
+**Orchestration**: Kubernetes or managed services (ECS / Cloud Run). For MVP, Render / Fly / Heroku + Vercel for frontend are acceptable.
+
+**Datastore**: Managed Postgres (AWS RDS / GCP Cloud SQL), Redis (cache & Celery broker), S3-compatible for backtest artifacts.
+
+**Scaling**:
+
+* Workers autoscale by queue backlog.
+* Postgres read replicas for heavy read loads (candles queries).
+
+**CI/CD**: GitHub Actions with staging and production environments. Run integration tests and backtest smoke tests before release.
+
+**Backups**: Daily DB backups; snapshot retention 30 days.
+
+---
+
+## 9. Testing & QA
+
+**Unit tests**: for strategy modules, risk manager, ledger accounting.
+
+**Integration tests**: simulate user placing orders and check ledger reconciliation.
+
+**E2E tests**: critical flows (signup, billing, place order, bot subscribe, backtest run).
+
+**Performance tests**: load test simultaneous viewers of a live-sim to validate websocket capacity.
+
+**Security tests**: pen-test before public launch.
+
+---
+
+## 10. Legal text & disclaimers (draft language)
+
+**Landing banner**: "Tunicoin simulates CFD & futures trading for educational purposes. No real funds are traded. Past simulated performance is not indicative of future results."
+
+**Checkout agreement snippet**: "I understand that Tunicoin operates a simulated trading environment. Subscribing to Tunicoin's AI strategies does not constitute investment advice. Tunicoin is not a broker or custodian and does not execute real market orders on my behalf."
+
+**Privacy**: short notice linking to full privacy policy describing data collection, retention, and deletion.
+
+**Terms**: include limitation of liability, jurisdiction, acceptable use, and prohibited claims around guaranteed returns.
+
+---
+
+## 11. Edge cases & error handling (complete list)
+
+1. **Network disconnect while placing order**: show optimistic UI with pending state; reconcile on reconnect and surface failure reasons.
+2. **Worker crash during live-sim**: mark bot status `Error`; flag affected trades; notify ops and users if trading impacted.
+3. **Out-of-range price request**: if candles endpoint requested for range beyond retention, return `206 Partial Content` and a helpful message.
+4. **Payment failure**: downgrade access immediately upon failed renewal after grace period; allow manual retry.
+5. **Simulated margin call**: automated partial close or liquidation policy defined (configurable) — default: incremental close starting with largest losers.
+6. **Backtest job exceeds resources**: gracefully fail with detailed error and allow smaller pitch to restart.
+7. **User requests data deletion**: anonymize historical logs where possible while preserving required audit logs for billing and compliance (notify user of limitations).
+
+---
+
+## 12. Analytics & events (tracking plan)
+
+**High-level events**:
+
+* `signup_started`, `signup_completed`
+* `subscription_started`, `subscription_cancelled`
+* `order_submitted`, `order_filled`, `order_cancelled`
+* `bot_attached`, `bot_paused`, `bot_resumed`
+* `backtest_started`, `backtest_completed`
+* `export_statement`
+
+**Properties**: include user_id (hashed for analytics), account_id, plan_tier, instrument, order_type, timestamp, and server-side request_id.
+
+**Tools**: Mixpanel/Amplitude for product analytics; Sentry for error tracking; Prometheus/Grafana for infra metrics.
+
+---
+
+## 13. UX flows (3 prioritized journeys)
+
+### Flow A — Onboarding & first bot run
+
+1. User signs up and chooses a demo pre-funded account.
+2. Guided tour highlights the chart, order ticket, and Bot panel.
+3. User attaches to default Tunicoin Bot, sets a low risk slider, and hits `Enable`.
+4. Live-sim runs for 24 hours; user receives daily digest email with P&L and top trades.
+
+### Flow B — Manual trade
+
+1. From the chart, user selects symbol, opens order ticket, sets limit order.
+2. Confirmation modal shows simulated margin, fees, and expected slippage.
+3. Order is placed; on fill the positions panel updates with unrealized P&L.
+
+### Flow C — Create backtest
+
+1. User goes to Backtest page, selects strategy, chooses date range and capital.
+2. Submits job and receives notification when complete.
+3. User reviews equity curve, trade list, and downloads CSV.
+
+---
+
+## 14. Acceptance criteria & success metrics
+
+**Stability**: 99.9% uptime for the core API during business hours.
+
+**Accuracy**: Ledgers must reconcile (sum of ledger entries equals account balance) to within 0.01 unit of base currency for any simulated account.
+
+**Performance**: Chart candlestick load for 1-year 1m candles < 400ms from cached store.
+
+**User metrics**:
+
+* Conversion rate from trial to paid > 4% (benchmark for SaaS trading-related products is low).
+* Daily active users (DAU), retention after 7/30/90 days.
+
+---
+
+## 15. Deliverables & next steps (for engineering)
+
+1. **MVP scope doc**: cut features to onboarding, trading canvas, Tunicoin Bot (single strategy, fixed params), billing, and basic backtest. (This doc acts as the definitive spec.)
+2. Create API skeleton and DB migrations for `users`, `accounts`, `instruments`, `orders`, `positions`, and `ledger_entries`.
+3. Implement simulation engine in Python with unit tests for margin/fill accounting.
+4. Implement a simple rule-based bot (e.g., 20/50 EMA crossover) and connect to frontend via sockets.
+5. Build billing flow and gated feature toggles.
+
+---
+
+## 16. Appendix: sample default configuration values
+
+* Default demo account capital: **$10,000**.
+* Default commission: **0.02% per trade**.
+* Default spread multipliers: `FX`: 0.0001, `Futures`: 0.01.
+* Default base slippage: 0.01%.
+* Default leverage limits: Free plan 1:10, Basic 1:20, Pro 1:50.
+* Default worker timeout for backtests: 1 hour (job can be split/sharded for longer ranges).
+
+---
+
+## 17. Glossary of artifacts for handoff
+
+* API contract (OpenAPI spec) for all endpoints.
+* DB migration files and ER diagram.
+* Python strategy & risk manager reference implementation with unit tests.
+* Example seed dataset for instruments and candle history for demo mode.
+* Figma design files for all main screens with interactions.
+* Legal drafts: Terms, Privacy Policy, Risk Disclosure.
+
+---
+
+## 18. Final notes on ethics and marketing
+
+* Always include truthful, non-misleading language about the simulated nature of the product.
+* Do not use clickbait promises like "guaranteed income" or "risk-free returns."
+* If you run contests or leaderboards, include anti-cheat measures and ensure fair comparison metrics.
+
+---
+
+*Document created as a comprehensive base specification. Use this as the canonical source of truth and iterate from here — update sections as design decisions are finalized.*

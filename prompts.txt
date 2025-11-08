@@ -1,0 +1,264 @@
+### Prompt 1 — Initialize monorepo & boilerplates (scaffold)
+
+```
+You are my AI code editor. Create a monorepo scaffold for the Tunicoin project. Use a folder structure and boilerplates as follows:
+
+- Root: initialize git repo, create README.md with project overview (Tunicoin, virtual CFD futures platform), add .gitignore.
+- Frontend: use Next.js 14 (or latest LTS) + TypeScript + Tailwind CSS. Place in /apps/web. Use Next.js SaaS starter patterns (Auth + Stripe stubs) as baseline. Install shadcn/ui & lucide-react for components. Add eslint + prettier config.
+- Backend API: FastAPI + Python + SQLModel (or Alembic) for DB migrations. Place in /apps/api. Add uvicorn, pydantic, and dependency injection layout. Provide Dockerfile.
+- Workers: Python Celery worker with Redis broker in /apps/worker. Add sample Celery task.
+- AI/Algo: /apps/agent as Python package that will host strategy modules and backtest runner. Include a minimal strategy example (20/50 EMA crossover).
+- Infra: create docker-compose.yml to run postgres, redis, pgadmin, web (Next build), api, worker, and nginx reverse proxy. Add Makefile commands: `make dev`, `make build`, `make migrate`, `make test`.
+- Dev tooling: GitHub Actions CI (lint, unit tests, build). Add a basic .github/workflows/ci.yml.
+
+Output: the full file list created and the most important file contents (package.json, pyproject.toml, docker-compose.yml, Next.js app root files, FastAPI main.py, sample Celery task, agent strategy file). Also include commands to run the monorepo locally and the acceptance criteria:
+  - `make dev` boots frontend, backend, DB, Redis and worker.
+  - Frontend home page reachable at http://localhost:3000.
+  - API reachable at http://localhost:8000/docs (OpenAPI).
+```
+
+---
+
+### Prompt 2 — Database schema, migrations, and seed data
+
+```
+You are my AI code editor. Implement the Postgres schema and DB migrations for Tunicoin according to the spec (users, accounts, instruments, candles, orders, positions, ledger_entries, bots, backtests). Use SQLModel (FastAPI + SQLModel) or SQLAlchemy + Alembic. Put migration scripts in /apps/api/migrations and include seed/fixture scripts for demo mode.
+
+Tasks:
+- Define models with fields, types, constraints, and indexes. Include unique constraints (user email), FKs, and indexes for candles (instrument_id + ts).
+- Create Alembic migration files to create these tables.
+- Provide a Python seed script that inserts:
+  - 1 demo user (email demo@tunicoin.local; password hashed)
+  - 1 demo account with $10,000 equity
+  - 5 instruments (BTC-USD, ETH-USD, BTC-FUT, S&P-FUT, EURUSD) with tick sizes and example spreads
+  - 30 days of 1m candle sample data per instrument (synthesized)
+- Add an endpoint /api/seed/run to (only in dev) run the seed script.
+
+Output: model definitions, migration files, seed script, and acceptance criteria:
+  - After `make migrate` and `POST /api/seed/run`, demo user exists and candles are queryable via `/api/market/{symbol}/candles?tf=1m`.
+```
+
+---
+
+### Prompt 3 — Backend core API: account, orders, ledger, websockets
+
+```
+You are my AI code editor. Build the FastAPI core endpoints and WebSocket channels required for the trading canvas and account ledger.
+
+Endpoints (implement with full request/response schemas and inline pydantic validation):
+- Auth: POST /api/auth/signup, POST /api/auth/login (JWT), POST /api/auth/refresh.
+- Accounts: GET /api/accounts/:id, POST /api/accounts (create simulated account).
+- Orders: POST /api/accounts/:id/orders (place simulated order), GET /api/accounts/:id/orders, DELETE /api/accounts/:id/orders/:order_id (cancel).
+- Positions: GET /api/accounts/:id/positions, POST /api/accounts/:id/positions/close (close position).
+- Market candles: GET /api/market/:symbol/candles?tf=&from=&to= (paginated)
+- Backtests: POST /api/backtests (create), GET /api/backtests/:id/results
+
+WebSocket:
+- /ws/accounts/:id/streams: streams account events (order updates, fills, positions, P&L updates) in JSON.
+
+Business logic:
+- Implement a simple execution simulator module that takes an order and produces a fill per the Simulation Rules (mid price ± spread, simple slippage model, ledger entries). Write this as an injectable service so agent and worker can call it.
+
+Testing:
+- Unit tests for order placement logic and ledger reconciliation (sum ledger entries equals account balance after operations).
+- API tests to create account, place market order, and confirm position creation and correct P&L calculation.
+
+Output: API route code, websocket handler, execution simulator module, tests, and acceptance criteria:
+  - `POST /api/accounts/:id/orders` returns 201 with order_id and triggers a fill event via WebSocket within <1s in dev.
+  - Ledger entries reconcile within 0.01 unit for test cases.
+```
+
+---
+
+### Prompt 4 — Frontend: landing page, auth, pricing & payment hooks
+
+```
+You are my AI code editor. Create the Next.js frontend pages & components for the public landing, auth flows, pricing, and Stripe + Binance Pay payment hooks (server stub).
+
+Pages/components:
+- Landing page: hero with Tunicoin tagline, features grid, blue/white theme, call-to-action to sign up. Include a small animated demo GIF placeholder (or CSS animation).
+- Auth: sign up, login, email verification, 2FA setup page (show QR and backup codes).
+- Pricing page: Free / Basic / Pro / Enterprise tiers, feature checklists, CTA buttons.
+- Checkout modal: integrates with a backend billing endpoint (POST /api/billing/subscribe).
+- Payment integrations: client side components for:
+  - Stripe Checkout (for fiat / credit card).
+  - Binance Pay button (client stub that calls backend to create Binance Pay order).
+  - WalletConnect/MetaMask modal for on-chain stablecoin purchases (UI only; backend endpoints will be wired later).
+
+Design & components:
+- Tailwind + shadcn primitives, responsive header + footer, global layout, accessible modals, and a reusable Button component.
+- Theme tokens for blue palette and white backgrounds in CSS variables.
+
+Output:
+- Frontend pages code, reusable components, and acceptance criteria:
+  - Landing page loads, sign up works via the API, pricing flow triggers the `/api/billing/subscribe` call.
+  - Client has a working Stripe Checkout flow stub for test mode (use test keys placeholders).
+```
+
+---
+
+### Prompt 5 — Charting, trading canvas UI, order ticket & mobile UX
+
+```
+You are my AI code editor. Implement the full trading canvas UI as described:
+
+- Use TradingView Lightweight Charts (or a pluggable chart wrapper) and TypeScript wrapper component: Chart.tsx that supports candles, overlay indicators (SMA/EMA), drawing tools (basic crosshair), timeframe selector, pan/zoom, and click-to-place-order integration.
+- Implement OrderTicket component with order types: Market, Limit, Stop, Stop-Limit, Take-Profit, Trailing Stop, OCO. Include margin calc, leverage slider, and a preview pane showing estimated fees, estimated slippage, and required margin.
+- Implement PositionsPanel and OrdersPanel components. Integrate these with the WebSocket stream to show live updates.
+- Mobile-first: implement full-screen chart and a bottom-drawer order ticket with gestures.
+- Accessibility: keyboard shortcuts to open order ticket (O), quick close (C), toggle bot (B).
+
+Output:
+- Chart wrapper, OrderTicket, PositionsPanel, integration with ws://localhost:8000/ws/accounts/:id/streams, and acceptance criteria:
+  - Candlestick chart renders demo candles.
+  - User can place a market order from the chart or order ticket; it triggers the backend order API and a WebSocket fill updates UI.
+```
+
+---
+
+### Prompt 6 — AI agent core: strategy framework, backtesting & explainability
+
+```
+You are my AI code editor. Implement the Python agent framework and backtesting runner.
+
+Structure:
+- /apps/agent/strategies: strategy interface `class BaseStrategy` with methods `on_candle`, `on_tick`, `generate_signals`, `get_params`, `serialize_state`.
+- Add one default rule-based strategy: `ema_crossover.py` (20/50 EMA) with position sizing based on account volatility.
+- Backtester: a command-line and API-invokable runner that accepts strategy, date range, capital, slippage model, and returns trade list + metrics (CAGR, Sharpe, max drawdown, win rate). Use vectorized calculations for performance.
+- Explainability: for rules-based strategies return a human-readable reason per trade (\"EMA20 crossed above EMA50 — signal: BUY\"), include indicators values in logs.
+- Integrate the backtester to the API (connect POST /api/backtests to spawn a Celery job that runs the backtest and saves the result to DB).
+
+Testing & sample outputs:
+- Unit test for backtester that simulates a simple synthetic uptrend and asserts the strategy produces net positive trades.
+- Provide a sample backtest result JSON with metrics and trade-by-trade logs.
+
+Acceptance criteria:
+- POST /api/backtests returns job_id and later GET /api/backtests/:id/results returns metrics and trade logs.
+- Backtester returns consistent metrics for expected scenarios (e.g., EMA crossover on uptrend yields >0% return).
+```
+
+---
+
+### Prompt 7 — Bot orchestration, risk manager & decision logging
+
+```
+You are my AI code editor. Build the Tunicoin Bot runtime orchestration and risk manager.
+
+Requirements:
+- Bot runtime service (runs as a Celery worker or separate process) that:
+  - Subscribes to a streaming feed (simulated market ticks) or replay engine.
+  - Executes strategy.generate_signals -> passes to RiskManager -> Execution Simulator.
+  - Emits structured decision logs: timestamp, strategy_name, input_features (indicator values), decision, proposed_order, final_order, reason_text, and fill_result.
+- RiskManager module:
+  - Position sizing rules (volatility/Kelly-style), max exposure, max daily loss, max drawdown per account.
+  - Circuit breakers: pause bot if daily loss > threshold or if unrealized drawdown exceeds limit.
+  - Parameter validation and per-user parameter caps (tied to plan).
+- Decision store: save per-trade decisions to `bot_decisions` table and link to ledger orders.
+- API endpoints:
+  - POST /api/bots/:bot_id/attach (subscribe bot to account)
+  - POST /api/bots/:bot_id/params (update params with validation)
+  - GET /api/bots/:bot_id/logs (paginated decision logs)
+
+Testing:
+- End-to-end test where bot attached to demo account runs on a 1-day replay and produces at least one trade and decision log.
+- Unit tests for risk manager edge cases (exceeding limits -> auto pause).
+
+Acceptance criteria:
+- Bot produces decision logs stored in DB and the account ledger reflects bot trades.
+- If risk limits hit, bot status becomes `paused` and an alert is produced.
+```
+
+---
+
+### Prompt 8 — Crypto payment integration (deposits & payouts) + fiat gateways
+
+```
+You are my AI code editor. Implement production-ready payment integrations for Tunicoin for both deposits (buying credits/subscription) and payouts (crypto withdrawals) while noting security and compliance constraints.
+
+Integrations to implement (server stubs + frontend hooks):
+1. **Binance Pay** (preferred for the user's existing preference):
+   - Server endpoint `POST /api/payments/binance/create` to create an order, sign request with merchant key, and return client payload to the frontend button.
+   - Webhook endpoint `POST /api/payments/binance/webhook` to confirm payments and credit user accounts.
+2. **Coinbase Commerce** (fall-back / international):
+   - Server endpoint `POST /api/payments/coinbase/create` to create a charge and return hosted_url. Webhook to confirm.
+3. **On-chain payments**:
+   - Client-side WalletConnect / MetaMask integration for ERC-20 (USDC) payments: UI component that requests a payment to a platform deposit address and calls backend `POST /api/payments/onchain/notify` with txid for verification.
+   - Backend verifies txid via blockchain explorer / node (for dev create a stub that validates via mock confirmations).
+4. **Payouts (crypto withdrawals)**:
+   - Admin-only endpoint `POST /api/payouts/crypto` to create a withdrawal request (requires KYC flag on user). This will generate a withdrawal record and queue a secure admin approval flow. For safety implement a placeholder `simulate_withdrawal` function that returns success only in dev.
+   - Include web UI in admin dashboard to approve/reject and view withdrawal history.
+
+Security & compliance:
+- Require KYC flag for withdrawals (create `kyc_status` on user model).
+- Store private keys/merchant secrets in environment vault only; never in code.
+- Add rate limits and manual admin approval for withdrawals in dev.
+
+Output:
+- Server endpoints (stubs with real Binance/coinbase SDK integration placeholders), frontend payment buttons, and admin payout UI components.
+- Acceptance criteria:
+  - Binance and Coinbase create endpoints return demo payloads.
+  - On-chain payment component can create a mock deposit and credit demo account in dev after verifying mock txid.
+  - Withdrawals require admin approval in the admin UI before changing user balance.
+```
+
+---
+
+### Prompt 9 — Admin dashboard, analytics, user & instrument management
+
+```
+You are my AI code editor. Build an admin dashboard to operate Tunicoin.
+
+Tech:
+- Use React + TypeScript inside /apps/web under /admin route, powered by an API proxy with role-based auth.
+- Use a component admin framework (AdminJS or react-admin / or a custom shadcn-based admin panel) with responsive UI.
+
+Features:
+- Auth-protected admin login + SSO stub.
+- User management: view list, search, edit plan, set KYC status, impersonate (dev-only).
+- Billing: view subscriptions, invoices, and manually adjust plan.
+- Payments: view payment webhooks, manual retry, and reconcile payments to accounts.
+- Instruments: add/update instrument definitions (tick size, contract size, spreads, funding rates).
+- Bots & Strategies: list deployed strategies, view backtest results, pause/resume bots globally.
+- Backtest job monitor: list jobs with status, logs, and ability to re-run or cancel.
+- Withdrawals: list pending crypto withdrawals and an approval modal (with simulated on-chain buttons).
+- Logs viewer: search trading logs, bot_decisions, and order fills.
+
+Output:
+- Admin UI pages, API endpoints for admin actions, and accessibility testing stubs.
+- Acceptance criteria:
+  - Admin can change a user's plan and the change reflects immediately in feature access.
+  - Admin can approve a mock withdrawal and the user's balance reduces accordingly (dev simulation).
+```
+
+---
+
+### Prompt 10 — CI/CD, deployment, monitoring & post-launch tasks
+
+```
+You are my AI code editor. Create CI/CD, deployment manifests, monitoring, and a post-launch checklist.
+
+CI/CD:
+- GitHub Actions pipeline with jobs: install + lint (frontend/backend), run unit tests, build Next app, build Docker images, run migration smoke tests, and (on main) push images to registry.
+- Provide Dockerfile for frontend, api, and worker (multi-stage).
+
+Kubernetes/Managed deploy:
+- Provide optional Kubernetes manifests (Deployment, Service, Ingress) and Helm chart skeleton OR instructions for simpler deploys using Vercel (frontend), Render/Railway/Fly for backend + workers.
+- Provide example environment variable configs for production: DATABASE_URL, REDIS_URL, STRIPE_KEY, BINANCE_PAY_KEY, JWT_SECRET.
+
+Monitoring & logging:
+- Add Sentry integration in frontend and backend.
+- Prometheus metrics export skeleton in FastAPI and worker; Grafana dashboard JSON scaffold showing request latency, worker queue length, active bots, backtest job durations.
+- Centralized logs to stdout (Docker) and instruction for hooking to a log shipper (Datadog/LogDNA) in production.
+
+Post-launch checklist:
+- Run pen-test and security audit.
+- Legal review of product claims and localized disclaimers for jurisdictions with CFD restrictions.
+- Acquire paid market data (tick-level) for realistic simulation and ensure licensing is integrated.
+- Plan for regular backups, DB maintenance, and data retention policy.
+
+Output:
+- CI YAML, Dockerfiles, Kubernetes manifests or Render deploy steps, Sentry + Prometheus integration snippets, and an actionable launch checklist.
+- Acceptance criteria:
+  - On push to main, CI pipeline completes and creates Docker artifacts.
+  - A staging environment can be deployed with the provided manifests and passes a basic smoke test (frontend loads, API responds).
+```

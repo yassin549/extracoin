@@ -1,0 +1,13 @@
+# Data Processing
+pandas==2.2.3
+numpy==2.1.2
+
+# Scientific Computing
+scipy==1.14.1
+
+# Machine Learning (for future ML strategies)
+scikit-learn==1.5.2
+
+# Utilities
+python-dateutil==2.9.0
+pytz==2024.2
