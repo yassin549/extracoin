@@ -124,8 +124,8 @@ GET  /api/investment/returns
 
 ### **Phase 5: Investment Dashboard** 🔄
 **Started:** Nov 9, 2025 (2:54 PM)  
-**Status:** Step 2 of 7 in progress  
-**Estimated Completion:** Today (~2 hours remaining)
+**Status:** Step 3 of 7 complete  
+**Estimated Completion:** Today (~1 hour remaining)
 
 #### **✅ Completed Steps:**
 
@@ -137,7 +137,7 @@ GET  /api/investment/returns
 - Quick actions sidebar
 - Responsive grid layout
 
-**Step 2: Account Overview Section** ✅ (Just completed)
+**Step 2: Account Overview Section** ✅
 - Auth context for user state management
 - Investment API client functions
 - Fetch real account data from backend
@@ -148,16 +148,18 @@ GET  /api/investment/returns
 - Loading states for all data
 - Conditional alerts (KYC pending, no account)
 
+**Step 3: Portfolio Performance Chart** ✅ (Just completed)
+- Created PortfolioChart component with TradingView lightweight-charts
+- Time period toggles (7D, 1M, 3M, 1Y, ALL)
+- Interactive area chart with gradient fill
+- Portfolio history generation from deposits/returns
+- Chart statistics (starting balance, current, growth %)
+- Responsive design with loading/empty states
+- Fixed API endpoint for investment returns
+
 #### **🔜 Remaining Steps:**
 
-**Step 3: Portfolio Performance Chart** (Next - ~25 min)
-- Line chart showing balance growth over time
-- Use lightweight-charts library
-- Daily/weekly/monthly view toggles
-- Interactive chart with tooltips
-- Show investment returns on chart
-
-**Step 4: Deposits History Table** (~20 min)
+**Step 4: Deposits History Table** (Next - ~20 min)
 - Fetch deposits from API
 - Table with columns: Date, Amount, Currency, Status
 - Status badges (pending, confirmed, failed)
