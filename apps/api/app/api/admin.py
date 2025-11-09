@@ -253,3 +253,60 @@ async def get_user_details(
         "investment_accounts": accounts,
         "kyc_submission": kyc,
     }
+
+
+@router.patch("/users/{user_id}/status")
+async def update_user_status(
+    user_id: str,
+    is_active: bool,
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update user active status (suspend/activate)."""
+    
+    from uuid import UUID
+    
+    try:
+        user_uuid = UUID(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format",
+        )
+    
+    # Get user
+    user_result = await db.execute(
+        select(User).where(User.id == user_uuid)
+    )
+    user = user_result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    
+    # Prevent admins from suspending themselves
+    if user.id == current_admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot modify your own account status",
+        )
+    
+    # Prevent suspending other admins
+    if user.is_admin and not is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot suspend admin users",
+        )
+    
+    # Update status
+    user.is_active = is_active
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    
+    return {
+        "message": f"User {'activated' if is_active else 'suspended'} successfully",
+        "user": user,
+    }
