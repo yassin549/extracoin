@@ -504,3 +504,106 @@ async def reject_kyc_submission(
         "message": "KYC submission rejected",
         "submission": submission,
     }
+
+
+# ==================== Deposit Management ====================
+
+@router.get("/deposits")
+async def get_all_deposits(
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+    status: str = None,
+    currency: str = None,
+    limit: int = 20,
+    offset: int = 0,
+):
+    """Get all deposits across all users with filters."""
+    
+    query = select(Deposit).order_by(Deposit.created_at.desc())
+    
+    if status and status != 'all':
+        query = query.where(Deposit.status == status)
+    
+    if currency and currency != 'all':
+        query = query.where(Deposit.currency == currency)
+    
+    query = query.limit(limit).offset(offset)
+    
+    result = await db.execute(query)
+    deposits = result.scalars().all()
+    
+    # Get total count
+    count_query = select(func.count(Deposit.id))
+    if status and status != 'all':
+        count_query = count_query.where(Deposit.status == status)
+    if currency and currency != 'all':
+        count_query = count_query.where(Deposit.currency == currency)
+    
+    count_result = await db.execute(count_query)
+    total = count_result.scalar_one()
+    
+    # Enrich with user information
+    enriched_deposits = []
+    for deposit in deposits:
+        deposit_dict = deposit.dict() if hasattr(deposit, 'dict') else vars(deposit)
+        
+        # Get investment account and user
+        account_result = await db.execute(
+            select(InvestmentAccount).where(InvestmentAccount.id == deposit.investment_account_id)
+        )
+        account = account_result.scalar_one_or_none()
+        
+        if account:
+            user_result = await db.execute(
+                select(User).where(User.id == account.user_id)
+            )
+            user = user_result.scalar_one_or_none()
+            if user:
+                deposit_dict['user_email'] = user.email
+                deposit_dict['user_name'] = user.full_name
+        
+        enriched_deposits.append(deposit_dict)
+    
+    return {
+        "deposits": enriched_deposits,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.get("/deposits/stats")
+async def get_deposit_stats(
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get deposit statistics."""
+    
+    # Total deposits
+    total_result = await db.execute(select(func.count(Deposit.id)))
+    total_deposits = total_result.scalar_one()
+    
+    # Total amount (confirmed only)
+    amount_result = await db.execute(
+        select(func.sum(Deposit.amount)).where(Deposit.status == 'confirmed')
+    )
+    total_amount = float(amount_result.scalar_one() or 0)
+    
+    # Pending count
+    pending_result = await db.execute(
+        select(func.count(Deposit.id)).where(Deposit.status == 'pending')
+    )
+    pending_count = pending_result.scalar_one()
+    
+    # Confirmed count
+    confirmed_result = await db.execute(
+        select(func.count(Deposit.id)).where(Deposit.status == 'confirmed')
+    )
+    confirmed_count = confirmed_result.scalar_one()
+    
+    return {
+        "total_deposits": total_deposits,
+        "total_amount": total_amount,
+        "pending_count": pending_count,
+        "confirmed_count": confirmed_count,
+    }
