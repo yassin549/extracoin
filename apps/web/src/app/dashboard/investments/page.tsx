@@ -2,23 +2,70 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, TrendingUp, Wallet, DollarSign, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Wallet, DollarSign, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/lib/auth-context';
+import { investmentApi, type InvestmentAccount, type Deposit, type InvestmentReturn } from '@/lib/investment-api';
+import { useToast } from '@/hooks/use-toast';
 
 export default function InvestmentDashboardPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const { toast } = useToast();
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [account, setAccount] = useState<InvestmentAccount | null>(null);
+  const [deposits, setDeposits] = useState<Deposit[]>([]);
+  const [returns, setReturns] = useState<InvestmentReturn[]>([]);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/auth/signin?redirect=/dashboard/investments');
     }
   }, [user, isLoading, router]);
+
+  // Fetch investment data
+  useEffect(() => {
+    const fetchInvestmentData = async () => {
+      if (!user) return;
+      
+      try {
+        setIsLoadingData(true);
+        
+        // Fetch investment accounts
+        const accounts = await investmentApi.getMyAccounts();
+        
+        if (accounts.length > 0) {
+          const primaryAccount = accounts[0]; // Use first active account
+          setAccount(primaryAccount);
+          
+          // Fetch deposits and returns for this account
+          const [depositsData, returnsData] = await Promise.all([
+            investmentApi.getDeposits(primaryAccount.id),
+            investmentApi.getReturns(primaryAccount.id),
+          ]);
+          
+          setDeposits(depositsData);
+          setReturns(returnsData);
+        }
+      } catch (error: any) {
+        console.error('Failed to fetch investment data:', error);
+        toast({
+          title: 'Error',
+          description: error.response?.data?.detail || 'Failed to load investment data',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    if (user && !isLoading) {
+      fetchInvestmentData();
+    }
+  }, [user, isLoading, toast]);
 
   if (isLoading || !user) {
     return (
@@ -60,15 +107,30 @@ export default function InvestmentDashboardPage() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         {/* KYC Warning Alert */}
-        <Alert className="mb-6 border-yellow-500 bg-yellow-50">
-          <AlertCircle className="h-4 w-4 text-yellow-600" />
-          <AlertDescription className="text-yellow-900">
-            Your KYC verification is pending. Complete KYC to activate your investment account.
-            <Link href="/kyc" className="ml-2 font-semibold underline hover:no-underline">
-              Complete KYC Now
-            </Link>
-          </AlertDescription>
-        </Alert>
+        {!isLoadingData && account?.status === 'pending_kyc' && (
+          <Alert className="mb-6 border-yellow-500 bg-yellow-50">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-900">
+              Your KYC verification is pending. Complete KYC to activate your investment account.
+              <Link href="/kyc" className="ml-2 font-semibold underline hover:no-underline">
+                Complete KYC Now
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* No Account Alert */}
+        {!isLoadingData && !account && (
+          <Alert className="mb-6 border-blue-500 bg-blue-50">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-900">
+              You don't have an investment account yet. Choose a tier and create your account to start investing.
+              <Link href="/invest" className="ml-2 font-semibold underline hover:no-underline">
+                View Investment Tiers
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -79,10 +141,18 @@ export default function InvestmentDashboardPage() {
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$0.00</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Available for withdrawal
-              </p>
+              {isLoadingData ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    ${account?.balance?.toFixed(2) || '0.00'}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Available for withdrawal
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -93,10 +163,18 @@ export default function InvestmentDashboardPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$0.00</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Initial deposits
-              </p>
+              {isLoadingData ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    ${account?.total_invested?.toFixed(2) || '0.00'}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Initial deposits
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -107,10 +185,22 @@ export default function InvestmentDashboardPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">+$0.00</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                <span className="text-green-600 font-semibold">+0.0%</span> lifetime ROI
-              </p>
+              {isLoadingData ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-green-600">
+                    +${account?.total_returns?.toFixed(2) || '0.00'}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <span className="text-green-600 font-semibold">
+                      +{account && account.total_invested > 0 
+                        ? ((account.total_returns / account.total_invested) * 100).toFixed(1)
+                        : '0.0'}%
+                    </span> lifetime ROI
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -121,10 +211,28 @@ export default function InvestmentDashboardPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">Pending</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Complete KYC to activate
-              </p>
+              {isLoadingData ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : (
+                <>
+                  <div className={`text-2xl font-bold ${
+                    account?.status === 'active' ? 'text-green-600' :
+                    account?.status === 'pending_kyc' ? 'text-yellow-600' :
+                    'text-gray-600'
+                  }`}>
+                    {account?.status === 'active' ? 'Active' :
+                     account?.status === 'pending_kyc' ? 'Pending KYC' :
+                     account?.status === 'suspended' ? 'Suspended' :
+                     'No Account'}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {account?.status === 'active' ? 'Account is active' :
+                     account?.status === 'pending_kyc' ? 'Complete KYC to activate' :
+                     !account ? 'Create an account to start' :
+                     'Contact support'}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -217,24 +325,45 @@ export default function InvestmentDashboardPage() {
                 <CardDescription>Your investment account info</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tier:</span>
-                  <span className="font-semibold">No tier selected</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">KYC Status:</span>
-                  <span className="text-yellow-600 font-semibold">Pending</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Account Status:</span>
-                  <span className="text-yellow-600 font-semibold">Inactive</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Member Since:</span>
-                  <span className="font-semibold">
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </span>
-                </div>
+                {isLoadingData ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tier:</span>
+                      <span className="font-semibold">{account?.tier_name || 'No tier selected'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Account Status:</span>
+                      <span className={`font-semibold ${
+                        account?.status === 'active' ? 'text-green-600' :
+                        account?.status === 'pending_kyc' ? 'text-yellow-600' :
+                        'text-gray-600'
+                      }`}>
+                        {account?.status === 'active' ? 'Active' :
+                         account?.status === 'pending_kyc' ? 'Pending KYC' :
+                         account?.status === 'suspended' ? 'Suspended' :
+                         'No Account'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Member Since:</span>
+                      <span className="font-semibold">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {account && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Account Created:</span>
+                        <span className="font-semibold">
+                          {new Date(account.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
 
