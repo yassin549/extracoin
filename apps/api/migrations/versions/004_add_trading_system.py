@@ -61,7 +61,7 @@ def upgrade() -> None:
         sa.Column('balance_after', sa.Numeric(20, 2), nullable=False),
         sa.Column('reference_id', sa.String(255), nullable=True),
         sa.Column('description', sa.String(500), nullable=True),
-        sa.Column('metadata', sa.Text, nullable=True),
+        sa.Column('extra_data', sa.Text, nullable=True),
         sa.Column('created_at', sa.DateTime, nullable=False, index=True),
     )
     
