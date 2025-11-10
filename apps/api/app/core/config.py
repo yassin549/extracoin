@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings"""
 
     # App
-    APP_NAME: str = "ExtraCoin"
+    APP_NAME: str = "OptCoin"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
 

@@ -75,7 +75,7 @@ export default function SignInPage() {
               Welcome Back
             </CardTitle>
             <CardDescription className="text-center">
-              Sign in to your ExtraCoin account
+              Sign in to your OptCoin trading account
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -136,7 +136,7 @@ export default function SignInPage() {
               <Alert variant="info">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  <strong>Demo Trading Account:</strong> demo@extracoin.local / demo123
+                  <strong>Demo Account:</strong> demo@optcoin.local / demo123
                 </AlertDescription>
               </Alert>
 
@@ -165,7 +165,7 @@ export default function SignInPage() {
 
         {/* Risk Disclaimer */}
         <p className="text-xs text-center text-muted-foreground mt-6">
-          ⚠️ Simulated trading only. No real funds are traded.
+          ⚠️ Trading involves risk of loss. Please trade responsibly.
         </p>
       </div>
     </div>

@@ -11,18 +11,18 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'ExtraCoin — AI-Powered Trading & Investment Platform',
+  title: 'OptCoin — Next-Generation AI Trading Platform',
   description:
-    'Trade CFDs in simulation mode or invest with our AI-powered trading engine. Regulated by CMF. Choose your path to financial growth.',
+    'Trade with real money in simulated markets powered by intelligent copy trading. The most advanced AI trading engine ever deployed publicly. Licensed & regulated.',
   keywords: [
-    'CFD trading',
-    'futures',
-    'trading simulator',
-    'AI trading',
-    'backtesting',
-    'virtual trading',
+    'AI trading platform',
+    'copy trading',
+    'simulated trading',
+    'algorithmic trading',
+    'professional trading',
+    'financial technology',
   ],
-  authors: [{ name: 'ExtraCoin' }],
+  authors: [{ name: 'OptCoin' }],
   icons: {
     icon: '/favicon.ico',
   },

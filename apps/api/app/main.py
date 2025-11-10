@@ -19,20 +19,21 @@ from app.api.crypto import router as crypto_router
 from app.api.investment import router as investment_router
 from app.api.kyc import router as kyc_router
 from app.api.admin import router as admin_router
+from app.api.trading import router as trading_router
 from app.api.ws import router as ws_router
 
 app = FastAPI(
-    title="ExtraCoin API",
-    description="AI-Powered Trading & Investment Platform API - Simulated trading and real investment management",
-    version="2.0.0",
+    title="OptCoin API",
+    description="Next-Generation AI Trading Platform - Simulated trading with real money & intelligent copy trading",
+    version="3.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
     contact={
-        "name": "ExtraCoin Support",
-        "email": "support@extracoin.com",
+        "name": "OptCoin Support",
+        "email": "support@optcoin.com",
     },
     license_info={
-        "name": "Proprietary - CMF Regulated",
+        "name": "Proprietary - Licensed Trading Platform",
     },
 )
 
@@ -53,15 +54,16 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 async def root():
     """Root endpoint - API information"""
     return {
-        "message": "ExtraCoin API",
-        "version": "2.0.0",
+        "message": "OptCoin API",
+        "version": "3.0.0",
         "status": "online",
         "docs": "/docs",
-        "regulation": "CMF (Conseil du Marché Financier)",
+        "regulation": "Licensed Trading Platform",
         "endpoints": {
             "auth": "/api/auth",
             "market": "/api/market",
             "accounts": "/api/accounts",
+            "trading": "/api/trading",
             "orders": "/api/accounts/{account_id}/orders",
             "positions": "/api/accounts/{account_id}/positions",
             "backtests": "/api/backtests",
@@ -76,7 +78,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint for Docker and monitoring"""
-    return {"status": "healthy", "version": "2.0.0"}
+    return {"status": "healthy", "version": "3.0.0"}
 
 
 # Register API routers
@@ -89,6 +91,7 @@ app.include_router(backtests_router, prefix="/api/backtests", tags=["Backtests"]
 app.include_router(crypto_router, prefix="/api/crypto", tags=["Crypto Payments"])
 app.include_router(investment_router, prefix="/api", tags=["Investment Management"])
 app.include_router(kyc_router, prefix="/api", tags=["KYC Verification"])
+app.include_router(trading_router, prefix="/api", tags=["Trading System"])
 app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
 
 # Temporary endpoint to make user admin (remove after use)

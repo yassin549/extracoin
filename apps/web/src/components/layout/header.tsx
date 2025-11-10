@@ -14,7 +14,7 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
           <TrendingUp className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold gradient-text">ExtraCoin</span>
+          <span className="text-2xl font-bold gradient-text">OptCoin</span>
         </Link>
 
         {/* Desktop Navigation */}

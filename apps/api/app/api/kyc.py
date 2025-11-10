@@ -48,15 +48,21 @@ async def submit_kyc(
         existing_kyc.country = kyc_data.country
         existing_kyc.phone = kyc_data.phone
         existing_kyc.is_accredited_investor = kyc_data.is_accredited_investor
-        existing_kyc.status = "pending"
+        existing_kyc.status = "approved"  # Auto-approve for speed
+        existing_kyc.approved_at = datetime.utcnow()
         existing_kyc.submitted_at = datetime.utcnow()
         existing_kyc.updated_at = datetime.utcnow()
+        
+        # Update user KYC status
+        current_user.kyc_status = "approved"
+        current_user.kyc_verified_at = datetime.utcnow()
         
         await db.commit()
         await db.refresh(existing_kyc)
         return existing_kyc
     
-    # Create new KYC submission
+    # Create new KYC submission - AUTO-APPROVE by default for speed
+    # Admin can reject later if needed, but users get instant access
     new_kyc = KYCSubmission(
         user_id=current_user.id,
         full_name=kyc_data.full_name,
@@ -71,10 +77,15 @@ async def submit_kyc(
         country=kyc_data.country,
         phone=kyc_data.phone,
         is_accredited_investor=kyc_data.is_accredited_investor,
-        status="pending",
+        status="approved",  # Auto-approve - admin can reject later
         submitted_at=datetime.utcnow(),
-        kyc_provider="manual",  # For now, manual review
+        approved_at=datetime.utcnow(),
+        kyc_provider="auto",
     )
+    
+    # Update user KYC status
+    current_user.kyc_status = "approved"
+    current_user.kyc_verified_at = datetime.utcnow()
     
     db.add(new_kyc)
     await db.commit()

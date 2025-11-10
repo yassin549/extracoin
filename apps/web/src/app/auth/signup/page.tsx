@@ -82,7 +82,7 @@ export default function SignUpPage() {
               Create Account
             </CardTitle>
             <CardDescription className="text-center">
-              Start trading CFD futures with virtual funds
+              Join the most advanced AI trading platform
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -154,7 +154,7 @@ export default function SignUpPage() {
               <Alert variant="info">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  By creating an account, you agree to our Terms of Service. ExtraCoin offers simulated trading for education and real investment management services. Choose your preferred mode in your dashboard.
+                  By creating an account, you agree to our Terms of Service. OptCoin offers simulated trading with real money deposits and intelligent copy trading to professional markets.
                 </AlertDescription>
               </Alert>
 
@@ -183,7 +183,7 @@ export default function SignUpPage() {
 
         {/* Risk Disclaimer */}
         <p className="text-xs text-center text-muted-foreground mt-6">
-          ⚠️ Simulated trading only. Past performance is not indicative of future results.
+          ⚠️ Trading involves risk. Past performance is not indicative of future results.
         </p>
       </div>
     </div>

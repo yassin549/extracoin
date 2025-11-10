@@ -12,14 +12,14 @@ export function Footer() {
           <div className="space-y-4">
             <Link href="/" className="flex items-center space-x-2">
               <TrendingUp className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold gradient-text">ExtraCoin</span>
+              <span className="text-xl font-bold gradient-text">OptCoin</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              AI-powered trading and investment platform. Trade CFDs in simulation mode or invest with our proven trading engine. Regulated by CMF.
+              Next-generation AI trading platform with intelligent copy trading. Experience the most advanced trading engine ever deployed publicly. Licensed & regulated.
             </p>
             <div className="flex space-x-4">
               <a
-                href="https://twitter.com/tunicoin"
+                href="https://twitter.com/optcoin"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary transition-colors"
@@ -27,7 +27,7 @@ export function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="https://github.com/tunicoin"
+                href="https://github.com/optcoin"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary transition-colors"
@@ -35,7 +35,7 @@ export function Footer() {
                 <Github className="h-5 w-5" />
               </a>
               <a
-                href="https://linkedin.com/company/tunicoin"
+                href="https://linkedin.com/company/optcoin"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary transition-colors"
@@ -43,7 +43,7 @@ export function Footer() {
                 <Linkedin className="h-5 w-5" />
               </a>
               <a
-                href="mailto:support@tunicoin.com"
+                href="mailto:support@optcoin.com"
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 <Mail className="h-5 w-5" />
@@ -142,7 +142,7 @@ export function Footer() {
         <div className="mt-12 pt-8 border-t">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-sm text-muted-foreground text-center md:text-left">
-              © {currentYear} ExtraCoin. All rights reserved. Regulated by CMF (Conseil du Marché Financier).
+              © {currentYear} OptCoin. All rights reserved. Licensed trading platform with full regulatory compliance.
             </p>
             <p className="text-xs text-muted-foreground text-center md:text-right">
               ⚠️ Investment returns are not guaranteed. Past performance does not indicate future results. Risk warning: Trading and investing involve risk of loss.

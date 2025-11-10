@@ -20,6 +20,12 @@ from .investment_return import InvestmentReturn
 from .payout import Payout
 from .kyc_submission import KYCSubmission
 
+# Trading system models
+from .trading_account import TradingAccount
+from .trading_transaction import TradingTransaction
+from .copy_trade import CopyTrade
+from .trading_payout import TradingPayout
+
 __all__ = [
     "User",
     "Account",
@@ -39,4 +45,9 @@ __all__ = [
     "InvestmentReturn",
     "Payout",
     "KYCSubmission",
+    # Trading system models
+    "TradingAccount",
+    "TradingTransaction",
+    "CopyTrade",
+    "TradingPayout",
 ]

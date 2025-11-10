@@ -74,7 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="flex items-center ml-4 lg:ml-0">
                 <Shield className="h-8 w-8 text-primary" />
                 <span className="ml-2 text-xl font-bold gradient-text">
-                  ExtraCoin Admin
+                  OptCoin Admin
                 </span>
               </div>
             </div>
