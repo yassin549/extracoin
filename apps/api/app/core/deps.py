@@ -14,6 +14,9 @@ from app.models.user import User
 # HTTP Bearer token scheme
 security = HTTPBearer()
 
+# Alias for backward compatibility
+get_db = get_session
+
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
