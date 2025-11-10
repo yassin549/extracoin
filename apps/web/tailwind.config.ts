@@ -20,21 +20,20 @@ const config: Config = {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        background: {
+          DEFAULT: 'hsl(var(--background))',
+          elevated: 'hsl(var(--background-elevated))',
+          card: 'hsl(var(--background-card))',
+        },
+        foreground: {
+          DEFAULT: 'hsl(var(--foreground))',
+          dimmed: 'hsl(var(--foreground-dimmed))',
+        },
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
-          50: '#EFF6FF',
-          100: '#DBEAFE',
-          200: '#BFDBFE',
-          300: '#93C5FD',
-          400: '#60A5FA',
-          500: '#3B82F6',
-          600: '#2B6EEA', // Main brand blue
-          700: '#1D4ED8',
-          800: '#1E40AF',
-          900: '#0B3D91', // Deep blue
+          light: 'hsl(var(--primary-light))',
+          dark: 'hsl(var(--primary-dark))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -60,18 +59,9 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        success: {
-          DEFAULT: '#10B981',
-          foreground: '#FFFFFF',
-        },
-        warning: {
-          DEFAULT: '#F59E0B',
-          foreground: '#FFFFFF',
-        },
-        error: {
-          DEFAULT: '#EF4444',
-          foreground: '#FFFFFF',
-        },
+        success: 'hsl(var(--success))',
+        warning: 'hsl(var(--warning))',
+        info: 'hsl(var(--info))'},
       },
       borderRadius: {
         lg: 'var(--radius)',

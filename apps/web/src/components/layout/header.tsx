@@ -9,58 +9,57 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-background">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
-          <TrendingUp className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold gradient-text">OptCoin</span>
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+            <span className="text-black font-bold text-xl">O</span>
+          </div>
+          <span className="text-xl font-bold text-white uppercase tracking-wide">OPT COIN</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
           <Link
-            href="/#features"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            href="/"
+            className="text-sm font-medium text-white hover:text-primary transition-colors"
           >
-            Features
+            Home
           </Link>
           <Link
-            href="/invest"
-            className="text-sm font-medium text-primary hover:text-primary/80 transition-colors font-semibold"
+            href="/futures"
+            className="text-sm font-medium text-foreground-dimmed hover:text-white transition-colors"
           >
-            Invest
+            Futures
           </Link>
           <Link
-            href="/pricing"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            href="/perpetual"
+            className="text-sm font-medium text-foreground-dimmed hover:text-white transition-colors"
           >
-            Trading Plans
+            Perpetual
           </Link>
           <Link
-            href="/#how-it-works"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            href="/asset"
+            className="text-sm font-medium text-foreground-dimmed hover:text-white transition-colors"
           >
-            How It Works
-          </Link>
-          <Link
-            href="/docs"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Docs
+            Asset
           </Link>
         </nav>
 
         {/* Desktop CTA Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link href="/auth/signin">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-          </Link>
-          <Link href="/auth/signup">
-            <Button size="sm">Get Started</Button>
-          </Link>
+          <button className="text-sm text-foreground-dimmed hover:text-white transition-colors flex items-center gap-2">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
+            </svg>
+            <span>Log in / Register</span>
+          </button>
+          <select className="bg-background-elevated text-white border border-white/10 rounded px-3 py-1 text-sm">
+            <option>ENGLISH</option>
+            <option>中文</option>
+            <option>Español</option>
+          </select>
         </div>
 
         {/* Mobile Menu Button */}
@@ -79,51 +78,41 @@ export function Header() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t bg-white animate-slide-down">
+        <div className="md:hidden border-t border-white/10 bg-background-elevated animate-slide-down">
           <div className="container mx-auto px-4 py-4 space-y-4">
             <Link
-              href="/#features"
-              className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              href="/"
+              className="block py-2 text-sm font-medium text-white hover:text-primary transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Features
+              Home
             </Link>
             <Link
-              href="/invest"
-              className="block py-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+              href="/futures"
+              className="block py-2 text-sm font-medium text-foreground-dimmed hover:text-white transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Invest
+              Futures
             </Link>
             <Link
-              href="/pricing"
-              className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              href="/perpetual"
+              className="block py-2 text-sm font-medium text-foreground-dimmed hover:text-white transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Trading Plans
+              Perpetual
             </Link>
             <Link
-              href="/#how-it-works"
-              className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              href="/asset"
+              className="block py-2 text-sm font-medium text-foreground-dimmed hover:text-white transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
-              How It Works
+              Asset
             </Link>
-            <Link
-              href="/docs"
-              className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Docs
-            </Link>
-            <div className="pt-4 space-y-2 border-t">
+            <div className="pt-4 space-y-2 border-t border-white/10">
               <Link href="/auth/signin" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="outline" className="w-full">
-                  Sign In
+                  Log in / Register
                 </Button>
-              </Link>
-              <Link href="/auth/signup" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full">Get Started</Button>
               </Link>
             </div>
           </div>
