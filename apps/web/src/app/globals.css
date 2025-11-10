@@ -14,6 +14,29 @@
     --foreground: 0 0% 100%;            /* Pure white #FFFFFF */
     --foreground-dimmed: 0 0% 60%;      /* Dimmed text #999999 */
     
+    /* UI Elements */
+    --border: 0 0% 100% / 0.15;         /* White 15% opacity */
+    --input: 0 0% 15%;                  /* Dark input bg */
+    --ring: 45 100% 51%;                /* Focus ring (yellow) */
+    
+    /* Card & Effects */
+    --card: 0 0% 10%;                   /* Dark card bg #1a1a1a */
+    --card-foreground: 0 0% 100%;       /* White text */
+    --popover: 0 0% 10%;                /* Dark popover bg */
+    --popover-foreground: 0 0% 100%;    /* White text */
+    
+    /* Muted elements */
+    --muted: 0 0% 15%;                  /* Dark muted bg */
+    --muted-foreground: 0 0% 60%;       /* Dimmed text */
+    
+    /* Secondary */
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Radius */
+    --radius: 0.5rem;
+    
     /* Primary - Yellow/Gold */
     --primary: 45 100% 51%;             /* Yellow #FFC107 */
     --primary-light: 45 100% 61%;       /* Lighter yellow */
@@ -87,7 +110,7 @@
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-white/10 rounded-full;
-    transition: background var(--transition-fast) var(--ease-smooth);
+    transition: background 0.2s ease;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
@@ -98,19 +121,19 @@
 /* Premium Animation Utilities */
 @layer utilities {
   .animate-fade-in {
-    animation: fade-in var(--transition-base) var(--ease-smooth) forwards;
+    animation: fade-in 0.3s ease forwards;
   }
 
   .animate-slide-up {
-    animation: slide-up var(--transition-slow) var(--ease-spring) forwards;
+    animation: slide-up 0.5s ease forwards;
   }
 
   .animate-slide-down {
-    animation: slide-down var(--transition-base) var(--ease-smooth) forwards;
+    animation: slide-down 0.3s ease forwards;
   }
   
   .animate-scale-in {
-    animation: scale-in var(--transition-slow) var(--ease-spring) forwards;
+    animation: scale-in 0.5s ease forwards;
   }
   
   .animate-glow {
@@ -210,7 +233,7 @@
 /* Focus Styles */
 .focus-ring {
   @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background;
-  transition: all var(--transition-fast) var(--ease-smooth);
+  transition: all 0.2s ease;
 }
 
 /* Buttons */
