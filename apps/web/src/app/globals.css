@@ -97,8 +97,9 @@
   }
 }
 
-/* Premium Custom Scrollbar */
+/* Utilities */
 @layer utilities {
+  /* Custom Scrollbar */
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -116,10 +117,8 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     @apply bg-white/20;
   }
-}
 
-/* Premium Animation Utilities */
-@layer utilities {
+  /* Animation Utilities */
   .animate-fade-in {
     animation: fade-in 0.3s ease forwards;
   }
