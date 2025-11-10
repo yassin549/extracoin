@@ -27,8 +27,8 @@ class TradingTransaction(SQLModel, table=True):
     reference_id: Optional[str] = Field(default=None, max_length=255)  # Order ID, deposit ID, etc.
     description: Optional[str] = Field(default=None, max_length=500)
     
-    # Additional metadata
-    metadata: Optional[str] = Field(default=None)  # JSON string for flexible data
+    # Additional data (renamed from metadata to avoid SQLAlchemy reserved keyword)
+    extra_data: Optional[str] = Field(default=None)  # JSON string for flexible data
     
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
