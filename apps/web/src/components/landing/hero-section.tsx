@@ -21,11 +21,11 @@ export function HeroSection() {
   // Parallax effect on scroll
   const parallaxY = scrollY * 0.5;
   
-  // Gyroscope parallax (mobile)
-  const tiltStyle = {
-    transform: `translate3d(${gyroTransform.x}px, ${gyroTransform.y}px, 0)`,
+  // Combined gyroscope and scroll parallax
+  const getOrbStyle = (scrollMultiplier: number) => ({
+    transform: `translate3d(${gyroTransform.x}px, ${gyroTransform.y + (-parallaxY * scrollMultiplier)}px, 0)`,
     transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  };
+  });
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
@@ -36,15 +36,12 @@ export function HeroSection() {
       {/* Floating orbs with parallax */}
       <div 
         className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float"
-        style={{ 
-          transform: `translateY(${-parallaxY * 0.3}px)`,
-          ...tiltStyle 
-        }}
+        style={getOrbStyle(0.3)}
       />
       <div 
-        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-cyan/10 rounded-full blur-3xl"
-        style={{ 
-          transform: `translateY(${-parallaxY * 0.5}px)`,
+        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-cyan/10 rounded-full blur-3xl animate-float"
+        style={{
+          ...getOrbStyle(0.5),
           animationDelay: '1s',
         }}
       />
