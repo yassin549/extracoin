@@ -607,3 +607,174 @@ async def get_deposit_stats(
         "pending_count": pending_count,
         "confirmed_count": confirmed_count,
     }
+
+
+# ==================== Returns Management ====================
+
+@router.get("/returns/eligible-accounts")
+async def get_eligible_accounts(
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get all active investment accounts eligible for return generation."""
+    
+    # Get active accounts with positive balance
+    accounts_result = await db.execute(
+        select(InvestmentAccount)
+        .where(
+            InvestmentAccount.status == 'active',
+            InvestmentAccount.balance > 0
+        )
+        .order_by(InvestmentAccount.balance.desc())
+    )
+    accounts = accounts_result.scalars().all()
+    
+    # Enrich with user information and last return date
+    enriched_accounts = []
+    for account in accounts:
+        account_dict = account.dict() if hasattr(account, 'dict') else vars(account)
+        
+        # Get user info
+        user_result = await db.execute(
+            select(User).where(User.id == account.user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        if user:
+            account_dict['user_email'] = user.email
+            account_dict['user_name'] = user.full_name
+        
+        # Get last return date
+        last_return_result = await db.execute(
+            select(InvestmentReturn)
+            .where(InvestmentReturn.investment_account_id == account.id)
+            .order_by(InvestmentReturn.created_at.desc())
+            .limit(1)
+        )
+        last_return = last_return_result.scalar_one_or_none()
+        if last_return:
+            account_dict['last_return_date'] = last_return.created_at.isoformat()
+        
+        enriched_accounts.append(account_dict)
+    
+    return {
+        "accounts": enriched_accounts,
+        "total": len(enriched_accounts),
+    }
+
+
+@router.get("/returns/stats")
+async def get_returns_stats(
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get returns generation statistics."""
+    
+    # Active accounts count
+    active_result = await db.execute(
+        select(func.count(InvestmentAccount.id)).where(
+            InvestmentAccount.status == 'active',
+            InvestmentAccount.balance > 0
+        )
+    )
+    active_accounts = active_result.scalar_one()
+    
+    # Total balance
+    balance_result = await db.execute(
+        select(func.sum(InvestmentAccount.balance)).where(
+            InvestmentAccount.status == 'active',
+            InvestmentAccount.balance > 0
+        )
+    )
+    total_balance = float(balance_result.scalar_one() or 0)
+    
+    # Estimated returns (using tier rates)
+    accounts_result = await db.execute(
+        select(InvestmentAccount).where(
+            InvestmentAccount.status == 'active',
+            InvestmentAccount.balance > 0
+        )
+    )
+    accounts = accounts_result.scalars().all()
+    
+    estimated_returns = sum(
+        (account.balance * account.return_rate / 100) for account in accounts
+    )
+    
+    return {
+        "active_accounts": active_accounts,
+        "total_balance": total_balance,
+        "estimated_returns": estimated_returns,
+    }
+
+
+@router.post("/returns/generate-bulk")
+async def generate_bulk_returns(
+    returns: list,
+    current_admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate returns for multiple accounts in bulk."""
+    
+    from uuid import UUID
+    
+    generated_count = 0
+    total_amount = 0.0
+    errors = []
+    
+    for return_data in returns:
+        try:
+            account_id = UUID(return_data['investment_account_id'])
+            return_percentage = float(return_data['return_percentage'])
+            
+            # Get account
+            account_result = await db.execute(
+                select(InvestmentAccount).where(InvestmentAccount.id == account_id)
+            )
+            account = account_result.scalar_one_or_none()
+            
+            if not account:
+                errors.append(f"Account {account_id} not found")
+                continue
+            
+            if account.status != 'active':
+                errors.append(f"Account {account_id} is not active")
+                continue
+            
+            if account.balance <= 0:
+                errors.append(f"Account {account_id} has zero balance")
+                continue
+            
+            # Calculate return amount
+            return_amount = (account.balance * return_percentage) / 100
+            
+            # Create investment return record
+            investment_return = InvestmentReturn(
+                investment_account_id=account.id,
+                amount=return_amount,
+                return_rate=return_percentage,
+                period_start=datetime.utcnow(),
+                period_end=datetime.utcnow(),
+                created_at=datetime.utcnow()
+            )
+            db.add(investment_return)
+            
+            # Update account balance
+            account.balance += return_amount
+            account.total_returns = (account.total_returns or 0) + return_amount
+            db.add(account)
+            
+            generated_count += 1
+            total_amount += return_amount
+            
+        except Exception as e:
+            errors.append(f"Error processing account: {str(e)}")
+            continue
+    
+    await db.commit()
+    
+    return {
+        "generated_count": generated_count,
+        "total_amount": total_amount,
+        "errors": errors if errors else None,
+        "message": f"Successfully generated returns for {generated_count} accounts",
+    }
